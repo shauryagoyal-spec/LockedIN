@@ -6,9 +6,11 @@ import Heatmap57 from './Heatmap57'
 interface HeatmapCardProps {
   data: HeatmapDay[]
   todayIndex: number
+  totalDays?: number
 }
 
-export default function HeatmapCard({ data, todayIndex }: HeatmapCardProps) {
+export default function HeatmapCard({ data, todayIndex, totalDays }: HeatmapCardProps) {
+  const total = totalDays ?? data.length
   const logged = data.filter(d => d.score != null && d.day <= todayIndex + 1).length
   const scores = data.map(d => d.score).filter((s): s is number => s != null)
   const best = scores.length ? Math.max(...scores) : 0
@@ -19,7 +21,7 @@ export default function HeatmapCard({ data, todayIndex }: HeatmapCardProps) {
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-5">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold text-white">Vacation grid</h2>
-        <p className="font-mono text-[11px] text-gray-500">{logged} / 57 LIT</p>
+        <p className="font-mono text-[11px] text-gray-500">{logged} / {total} LIT</p>
       </div>
       <div className="mt-4">
         <Heatmap57 data={data} todayIndex={todayIndex} cell={18} gap={3} />

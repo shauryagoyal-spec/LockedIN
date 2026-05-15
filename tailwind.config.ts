@@ -5,7 +5,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // GrindOS brand — hot orange, "you're on fire" tone
         brand: {
           50:  '#fff4ed',
           100: '#ffe6d4',
@@ -18,11 +17,26 @@ const config: Config = {
           800: '#8a2f0e',
           900: '#3a1404',
         },
+        // dark surface palette used by auth + dashboard
+        ink: {
+          DEFAULT: '#f5f3ee',
+          muted:   '#b5b2a8',
+          subtle:  '#6b6960',
+        },
+        surface: {
+          0: '#050506',
+          1: '#0a0a0b',
+          2: '#0e0e11',
+          3: '#18181d',
+        },
+        line: {
+          DEFAULT: '#232328',
+          2:       '#2e2e36',
+        },
       },
       fontFamily: {
-        // System stack — no external load. Add 'Inter Tight' here if you load it via next/font.
-        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        sans: ['var(--font-inter-tight)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       boxShadow: {
         'brand-glow': '0 8px 24px -8px rgba(255, 91, 31, 0.5)',

@@ -1,12 +1,16 @@
-export function getDayNumber(): number {
-  const start = new Date('2025-05-25')
+export function getDayNumber(startDate?: string | null, totalDays?: number | null): number {
+  const start = new Date(startDate ?? '2025-05-25')
+  const days = totalDays ?? 30
   const today = new Date()
   const diff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-  return Math.max(1, Math.min(diff + 1, 57))
+  return Math.max(1, Math.min(diff + 1, days))
 }
 
-export function getDaysRemaining(): number {
-  const end = new Date('2025-07-20')
+export function getDaysRemaining(startDate?: string | null, totalDays?: number | null): number {
+  const start = new Date(startDate ?? '2025-05-25')
+  const days = totalDays ?? 30
+  const end = new Date(start)
+  end.setDate(start.getDate() + days)
   const today = new Date()
   const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   return Math.max(0, diff)

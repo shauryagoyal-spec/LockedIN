@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { LayoutDashboard, Code2, Dumbbell, BookOpen, LogOut, Flame } from 'lucide-react'
+import { LayoutDashboard, Code2, Dumbbell, BookOpen, LogOut, Flame, UserCircle } from 'lucide-react'
 
 const links = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dsa', label: 'DSA', icon: Code2 },
   { href: '/gym', label: 'Gym', icon: Dumbbell },
   { href: '/skills', label: 'Skills', icon: BookOpen },
+  { href: '/profile', label: 'Profile', icon: UserCircle },
 ]
 
 export default function NavBar() {
@@ -52,17 +53,7 @@ export default function NavBar() {
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-gray-800/80 space-y-3">
-          <div className="px-3">
-            <p className="text-[10px] uppercase tracking-[0.15em] text-gray-500">Vacation</p>
-            <p className="text-sm font-semibold text-white mt-1">
-              Day 4 <span className="text-gray-500 font-normal">of 57</span>
-            </p>
-            <p className="text-[11px] text-gray-500 mt-0.5">53 days left</p>
-          </div>
-          <p className="text-xs text-gray-500 px-3 truncate">
-            {session?.user?.email ?? ''}
-          </p>
+        <div className="px-3 py-4 border-t border-gray-800/80">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-gray-900 transition-colors"

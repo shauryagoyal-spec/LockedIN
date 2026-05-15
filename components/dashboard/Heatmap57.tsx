@@ -4,7 +4,6 @@ import type { HeatmapDay } from '@/types/dashboard'
 
 interface Heatmap57Props {
   data: HeatmapDay[]
-  /** Highlight today's cell with a ring. */
   todayIndex?: number
   cell?: number
   gap?: number
@@ -18,26 +17,28 @@ function scoreColor(s: number | null): string {
   return '#ff7a45'
 }
 
-/** 57-day vacation heatmap, GitHub-style. 9 cols × 7 rows = 63 cells —
- *  the trailing 6 are rendered transparent so the row stays square. */
 export default function Heatmap57({ data, todayIndex, cell = 16, gap = 4 }: Heatmap57Props) {
-  // Pad to 63 with nulls so the grid always reads cleanly.
-  const cells = [...data.slice(0, 57)]
-  while (cells.length < 63) {
+  const totalDays = data.length || 30
+  const cols = Math.ceil(totalDays / 7)
+  const gridSize = cols * 7
+
+  const cells = [...data.slice(0, totalDays)]
+  while (cells.length < gridSize) {
     cells.push({ day: cells.length + 1, score: null, date: '' })
   }
+
   return (
     <div
       className="grid"
       style={{
         gridTemplateRows: `repeat(7, ${cell}px)`,
-        gridTemplateColumns: `repeat(9, ${cell}px)`,
+        gridTemplateColumns: `repeat(${cols}, ${cell}px)`,
         gridAutoFlow: 'column',
         gap,
       }}
     >
       {cells.map((d, i) => {
-        const isOver = i >= 57
+        const isOver = i >= totalDays
         const isToday = todayIndex === i
         return (
           <div

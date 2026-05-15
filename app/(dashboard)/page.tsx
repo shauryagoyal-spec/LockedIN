@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getDayNumber, getDaysRemaining, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { DashboardToday, HeatmapDay, PillarsData } from '@/types/dashboard'
 
 import TopStrip from '@/components/dashboard/TopStrip'
@@ -12,13 +12,12 @@ import ScoreBreakdown from '@/components/dashboard/ScoreBreakdown'
 import HeatmapCard from '@/components/dashboard/HeatmapCard'
 import Pillars from '@/components/dashboard/Pillars'
 
-const VACATION_START = new Date('2025-05-25')
-
-function buildHeatmapScaffold(): HeatmapDay[] {
+function buildHeatmapScaffold(startDate: string | null, totalDays: number): HeatmapDay[] {
+  const start = startDate ? new Date(startDate) : new Date()
   const arr: HeatmapDay[] = []
-  for (let i = 0; i < 57; i++) {
-    const d = new Date(VACATION_START)
-    d.setDate(VACATION_START.getDate() + i)
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
     arr.push({ day: i + 1, score: null, date: d.toISOString().slice(0, 10) })
   }
   return arr
@@ -26,8 +25,8 @@ function buildHeatmapScaffold(): HeatmapDay[] {
 
 const emptyToday: DashboardToday = {
   date: new Date().toISOString(),
-  dayNumber: getDayNumber(),
-  daysRemaining: getDaysRemaining(),
+  dayNumber: 1,
+  daysRemaining: 30,
   score: null,
   parts: [],
   bonus: 0,
@@ -43,16 +42,23 @@ const emptyPillars: PillarsData = {
 
 export default function DashboardPage() {
   const [today, setToday] = useState<DashboardToday>({ ...emptyToday })
-  const [heatmap, setHeatmap] = useState<HeatmapDay[]>(buildHeatmapScaffold)
+  const [totalDays, setTotalDays] = useState(30)
+  const [lockInStart, setLockInStart] = useState<string | null>(null)
+  const [heatmap, setHeatmap] = useState<HeatmapDay[]>(() => buildHeatmapScaffold(null, 30))
   const [pillars, setPillars] = useState<PillarsData>(emptyPillars)
 
   useEffect(() => {
-    // Dashboard summary
+    // Dashboard summary (includes totalDays + lockInStart)
     fetch('/api/dashboard/today')
       .then(r => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return
+        const days = data.totalDays ?? 30
+        const start = data.lockInStart ?? null
         setToday(prev => ({ ...prev, ...data }))
+        setTotalDays(days)
+        setLockInStart(start)
+        setHeatmap(buildHeatmapScaffold(start, days))
       })
       .catch(() => {})
 
@@ -85,7 +91,7 @@ export default function DashboardPage() {
       })
       .catch(() => {})
 
-    // Heatmap
+    // Heatmap scores overlay
     fetch('/api/dsa/heatmap')
       .then(r => (r.ok ? r.json() : null))
       .then((data: { date: string; problemsSolved: number }[] | null) => {
@@ -139,7 +145,6 @@ export default function DashboardPage() {
         dayLabel={dayLabel}
         dayNumber={today.dayNumber}
         daysRemaining={today.daysRemaining}
-        icpcDaysAway={142}
         score={today.score}
         streak={today.streak.current}
         pace={pace}
@@ -156,7 +161,7 @@ export default function DashboardPage() {
 
         <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
           <ScoreBreakdown data={today} />
-          <HeatmapCard data={heatmap} todayIndex={today.dayNumber - 1} />
+          <HeatmapCard data={heatmap} todayIndex={today.dayNumber - 1} totalDays={totalDays} />
         </section>
 
         <section>

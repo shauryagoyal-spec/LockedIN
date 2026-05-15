@@ -8,11 +8,13 @@ datasource db {
 }
 
 model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique
-  password    String
-  isOnboarded Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  password     String
+  isOnboarded  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  lockInStart  DateTime?
+  lockInDays   Int       @default(30)
 
   dsaProfile        DSAProfile?
   gymProfile        GymProfile?
