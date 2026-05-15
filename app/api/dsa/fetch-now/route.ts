@@ -28,11 +28,12 @@ export async function POST() {
     return NextResponse.json({ error: 'DSA profile not found' }, { status: 404 })
   }
 
+  // Use UTC midnight so snapshot dates align with CF's UTC-based timestamps
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
 
   const prevSnapshots = await prisma.dSASnapshot.findMany({
     where: { userId, date: yesterday },
@@ -70,9 +71,34 @@ export async function POST() {
           const solvedToday = data.todayAC
           await prisma.dSASnapshot.upsert({
             where: { userId_date_platform: { userId, date: today, platform: 'codeforces' } },
-            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: data as object },
-            create: { userId, date: today, platform: 'codeforces', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: data as object },
+            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: { ...data, submissions: undefined } as object },
+            create: { userId, date: today, platform: 'codeforces', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: { ...data, submissions: undefined } as object },
           })
+          // Upsert all submissions into DSASubmission (keyed by userId + platform + problemId)
+          await Promise.all(
+            data.submissions.map((sub) =>
+              prisma.dSASubmission.upsert({
+                where: { userId_platform_problemId: { userId, platform: 'codeforces', problemId: sub.problemId } },
+                update: {
+                  problemTitle: sub.problemTitle,
+                  tags: sub.tags,
+                  difficulty: sub.difficulty != null ? String(sub.difficulty) : null,
+                  status: sub.status,
+                  submittedAt: sub.submittedAt,
+                },
+                create: {
+                  userId,
+                  platform: 'codeforces',
+                  problemId: sub.problemId,
+                  problemTitle: sub.problemTitle,
+                  tags: sub.tags,
+                  difficulty: sub.difficulty != null ? String(sub.difficulty) : null,
+                  status: sub.status,
+                  submittedAt: sub.submittedAt,
+                },
+              })
+            )
+          )
           results.push({ platform: 'codeforces', status: 'ok', totalSolved: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating })
         })
         .catch((e) => void results.push({ platform: 'codeforces', status: 'error', error: String(e) }))

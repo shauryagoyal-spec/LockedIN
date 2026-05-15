@@ -42,12 +42,6 @@ export default function RegisterPage() {
         return
       }
 
-      try {
-        window.localStorage.setItem('pending_lock_in_days', String(days))
-      } catch {
-        /* localStorage unavailable — ignore */
-      }
-
       const result = await signIn('credentials', {
         email,
         password,
@@ -59,7 +53,7 @@ export default function RegisterPage() {
         return
       }
 
-      router.push('/onboarding')
+      router.push('/')
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {

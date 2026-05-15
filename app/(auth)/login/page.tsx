@@ -31,9 +31,8 @@ export default function LoginPage() {
         return
       }
 
-      const session = await update()
-      const isOnboarded = (session?.user as { isOnboarded?: boolean } | undefined)?.isOnboarded
-      router.push(isOnboarded ? '/' : '/onboarding')
+      await update()
+      router.push('/')
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {

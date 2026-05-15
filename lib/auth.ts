@@ -20,7 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null
         const valid = await bcrypt.compare(credentials.password as string, user.password)
         if (!valid) return null
-        return { id: String(user.id), email: user.email, isOnboarded: user.isOnboarded }
+        return { id: String(user.id), email: user.email }
       },
     }),
   ],
@@ -28,15 +28,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.isOnboarded = (user as { id: string; email: string; isOnboarded: boolean }).isOnboarded
       }
       return token
     },
     session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
-        ;(session.user as { id: string; email?: string | null; isOnboarded?: boolean }).isOnboarded =
-          token.isOnboarded as boolean
       }
       return session
     },

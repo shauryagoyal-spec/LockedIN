@@ -10,11 +10,18 @@ export async function GET(req: NextRequest) {
 
   const userId = parseInt(session.user.id)
   const { searchParams } = new URL(req.url)
-  const days = parseInt(searchParams.get('days') ?? '57')
+
+  let days: number
+  if (searchParams.has('days')) {
+    days = parseInt(searchParams.get('days')!)
+  } else {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { lockInDays: true } })
+    days = user?.lockInDays ?? 30
+  }
 
   const since = new Date()
-  since.setDate(since.getDate() - days)
-  since.setHours(0, 0, 0, 0)
+  since.setUTCDate(since.getUTCDate() - days)
+  since.setUTCHours(0, 0, 0, 0)
 
   const snapshots = await prisma.dSASnapshot.findMany({
     where: { userId, date: { gte: since } },
@@ -32,5 +39,6 @@ export async function GET(req: NextRequest) {
     problemsSolved,
   }))
 
+  // Return a plain array — the DSA page does Array.isArray() on this response
   return NextResponse.json(result)
 }

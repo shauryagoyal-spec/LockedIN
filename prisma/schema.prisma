@@ -66,6 +66,8 @@ model DSASubmission {
   difficulty   String?
   status       String
   submittedAt  DateTime
+
+  @@unique([userId, platform, problemId])
 }
 
 model GymProfile {

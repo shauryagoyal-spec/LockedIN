@@ -10,7 +10,7 @@ export async function GET() {
 
   const userId = parseInt(session.user.id)
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   const snapshots = await prisma.dSASnapshot.findMany({
     where: { userId, date: today },
