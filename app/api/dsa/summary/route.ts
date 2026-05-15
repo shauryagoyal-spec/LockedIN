@@ -103,7 +103,7 @@ async function getTopicsAndRecent(userId: number) {
   const recent = subs.slice(0, 4).map(s => {
     const tags = (s.tags ?? []) as string[] | null
     return {
-      status: s.status === 'OK' || s.status === 'AC' ? 'ac' as const : 'wa' as const,
+      status: s.status === 'AC' ? 'ac' as const : 'wa' as const,
       title: s.problemTitle,
       platform: s.platform,
       difficulty: s.difficulty,
@@ -114,7 +114,7 @@ async function getTopicsAndRecent(userId: number) {
 
   // topics: tally unique-solved (status=AC) by tag, lifetime — pull all-time accepted
   const acAll = await prisma.dSASubmission.findMany({
-    where: { userId, status: { in: ['OK', 'AC'] } },
+    where: { userId, status: 'AC' },
     select: { tags: true, problemId: true, platform: true },
   })
 

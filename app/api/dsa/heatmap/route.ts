@@ -30,15 +30,15 @@ export async function GET(req: NextRequest) {
 
   const grouped: Record<string, number> = {}
   for (const s of snapshots) {
-    const key = s.date.toISOString().split('T')[0]
+    const key = s.date.toISOString().slice(0, 10)
     grouped[key] = (grouped[key] ?? 0) + s.problemsSolvedToday
   }
 
-  const result = Object.entries(grouped).map(([date, problemsSolved]) => ({
+  const data = Object.entries(grouped).map(([date, problemsSolved]) => ({
     date,
     problemsSolved,
   }))
 
-  // Return a plain array — the DSA page does Array.isArray() on this response
-  return NextResponse.json(result)
+  // Return { days, data } — the DSA page reads h?.days and h?.data
+  return NextResponse.json({ days, data })
 }

@@ -9,26 +9,53 @@ export async function GET() {
   }
 
   const userId = parseInt(session.user.id)
+
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
-
-  const snapshots = await prisma.dSASnapshot.findMany({
-    where: { userId, date: today },
-  })
 
   const profile = await prisma.dSAProfile.findUnique({ where: { userId } })
   const dailyTarget = profile?.dailyTarget ?? 5
 
-  const totalToday = snapshots.reduce((sum, s) => sum + s.problemsSolvedToday, 0)
-  const byPlatform = snapshots.map((s) => ({
-    platform: s.platform,
-    problemsSolvedToday: s.problemsSolvedToday,
-    problemsSolvedTotal: s.problemsSolvedTotal,
-    rating: s.rating,
-  }))
+  // Get today's snapshots first
+  const todaySnapshots = await prisma.dSASnapshot.findMany({
+    where: { userId, date: today },
+  })
+  const todayByPlatform = new Map(todaySnapshots.map((s) => [s.platform, s]))
 
-  const lastFetched = snapshots.length > 0
-    ? snapshots.reduce((latest, s) => s.createdAt > latest ? s.createdAt : latest, snapshots[0].createdAt)
+  // For any platform that has no snapshot today, get its most recent snapshot
+  const allPlatforms = ['leetcode', 'codeforces', 'codechef', 'cses']
+  const missingPlatforms = allPlatforms.filter((p) => !todayByPlatform.has(p))
+
+  const recentSnapshots = missingPlatforms.length > 0
+    ? await prisma.dSASnapshot.findMany({
+        where: { userId, platform: { in: missingPlatforms } },
+        orderBy: { date: 'desc' },
+        distinct: ['platform'],
+      })
+    : []
+
+  const recentByPlatform = new Map(recentSnapshots.map((s) => [s.platform, s]))
+  const todayISO = today.toISOString().slice(0, 10)
+  const totalToday = todaySnapshots.reduce((sum, s) => sum + s.problemsSolvedToday, 0)
+
+  // Always return all 4 platform cards — zero out if no data exists yet
+  const byPlatform = allPlatforms.map((platform) => {
+    const snap = todayByPlatform.get(platform) ?? recentByPlatform.get(platform) ?? null
+    const isToday = snap?.date.toISOString().slice(0, 10) === todayISO
+    return {
+      platform,
+      problemsSolvedToday: isToday ? (snap?.problemsSolvedToday ?? 0) : 0,
+      problemsSolvedTotal: snap?.problemsSolvedTotal ?? 0,
+      rating: snap?.rating ?? null,
+      isStale: snap != null && !isToday,
+    }
+  })
+
+  const lastFetched = todaySnapshots.length > 0
+    ? todaySnapshots.reduce(
+        (latest, s) => (s.createdAt > latest ? s.createdAt : latest),
+        todaySnapshots[0].createdAt
+      )
     : null
 
   return NextResponse.json({

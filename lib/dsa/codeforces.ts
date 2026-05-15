@@ -3,8 +3,9 @@ export interface CFSubmission {
   problemTitle: string
   tags: string[]
   difficulty: number | null
-  status: 'ac' | 'wa'
-  submittedAt: Date
+  status: 'AC' | 'WA'
+  submittedAt: Date   // latest submission timestamp
+  firstAcAt: Date | null  // when this problem was first AC'd (null if never AC'd)
 }
 
 export interface CodeforcesResult {
@@ -14,6 +15,8 @@ export interface CodeforcesResult {
   totalSolved: number
   todayAC: number
   submissions: CFSubmission[]
+  // date → unique problems first-AC'd on that UTC date (used for heatmap backfill)
+  dailyFirstAC: Record<string, number>
 }
 
 export async function fetchCodeforces(handle: string): Promise<CodeforcesResult> {
@@ -48,37 +51,58 @@ export async function fetchCodeforces(handle: string): Promise<CodeforcesResult>
   todayUTCStart.setUTCHours(0, 0, 0, 0)
   const todayStartSec = todayUTCStart.getTime() / 1000
 
-  // Unique AC problems (for total count)
-  const acProblems = new Set(
-    rawSubs.filter((s) => s.verdict === 'OK').map(problemKey)
-  )
+  // CF returns submissions newest-first. We need:
+  //   - first AC time per problem  → iterate in reverse (oldest first)
+  //   - latest submission per problem → iterate forward (newest first)
 
-  // Unique AC problems today
+  // Pass 1 (oldest→newest): find first AC time per problem
+  const firstAcSec = new Map<string, number>()
+  for (let i = rawSubs.length - 1; i >= 0; i--) {
+    const s = rawSubs[i]
+    if (s.verdict === 'OK') {
+      const key = problemKey(s)
+      const existing = firstAcSec.get(key)
+      if (existing === undefined || s.creationTimeSeconds < existing) {
+        firstAcSec.set(key, s.creationTimeSeconds)
+      }
+    }
+  }
+
+  // Pass 2 (newest→oldest): build one entry per unique problem
+  const seenProblems = new Map<string, CFSubmission>()
+  for (const s of rawSubs) {
+    const key = problemKey(s)
+    if (seenProblems.has(key)) continue  // already captured the latest
+    const isAC = s.verdict === 'OK'
+    const firstAcSec_ = firstAcSec.get(key) ?? null
+    seenProblems.set(key, {
+      problemId: key,
+      problemTitle: s.problem.name,
+      tags: s.problem.tags ?? [],
+      difficulty: s.problem.rating ?? null,
+      status: isAC ? 'AC' : 'WA',
+      submittedAt: new Date(s.creationTimeSeconds * 1000),
+      firstAcAt: firstAcSec_ != null ? new Date(firstAcSec_ * 1000) : null,
+    })
+  }
+
+  // Unique AC problems (total count)
+  const acProblems = new Set(firstAcSec.keys())
+
+  // Today's unique AC problems
   const todayAcProblems = new Set(
     rawSubs
       .filter((s) => s.verdict === 'OK' && s.creationTimeSeconds >= todayStartSec)
       .map(problemKey)
   )
 
-  // Build submission list — one entry per unique problem, keeping the latest submission
-  const seenProblems = new Map<string, CFSubmission>()
-  for (const s of rawSubs) {
-    const key = problemKey(s)
-    const isAC = s.verdict === 'OK'
-    const entry: CFSubmission = {
-      problemId: key,
-      problemTitle: s.problem.name,
-      tags: s.problem.tags ?? [],
-      difficulty: s.problem.rating ?? null,
-      status: isAC ? 'ac' : 'wa',
-      submittedAt: new Date(s.creationTimeSeconds * 1000),
-    }
-    const existing = seenProblems.get(key)
-    // Prefer AC over WA; among same verdict prefer newer
-    if (!existing || (isAC && existing.status !== 'ac') || entry.submittedAt > existing.submittedAt) {
-      seenProblems.set(key, entry)
-    }
-  }
+  // dailyFirstAC: for each UTC date, how many problems were first AC'd that day
+  const dailyFirstAC: Record<string, number> = {}
+  firstAcSec.forEach((sec) => {
+    const d = new Date(sec * 1000)
+    const dateKey = d.toISOString().slice(0, 10)
+    dailyFirstAC[dateKey] = (dailyFirstAC[dateKey] ?? 0) + 1
+  })
 
   return {
     rating: user.rating ?? null,
@@ -87,5 +111,6 @@ export async function fetchCodeforces(handle: string): Promise<CodeforcesResult>
     totalSolved: acProblems.size,
     todayAC: todayAcProblems.size,
     submissions: Array.from(seenProblems.values()),
+    dailyFirstAC,
   }
 }

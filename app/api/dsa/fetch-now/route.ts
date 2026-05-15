@@ -69,12 +69,39 @@ export async function POST() {
       fetchCodeforces(profile.cfHandle)
         .then(async (data) => {
           const solvedToday = data.todayAC
+
+          // 1. Upsert today's snapshot
           await prisma.dSASnapshot.upsert({
             where: { userId_date_platform: { userId, date: today, platform: 'codeforces' } },
-            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: { ...data, submissions: undefined } as object },
-            create: { userId, date: today, platform: 'codeforces', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating, rawData: { ...data, submissions: undefined } as object },
+            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating },
+            create: { userId, date: today, platform: 'codeforces', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating },
           })
-          // Upsert all submissions into DSASubmission (keyed by userId + platform + problemId)
+
+          // 2. Backfill historical snapshots from dailyFirstAC map.
+          //    Only touch past dates — today is already handled above.
+          const todayKey = today.toISOString().slice(0, 10)
+          const historicalEntries = Object.entries(data.dailyFirstAC).filter(
+            ([dateKey]) => dateKey !== todayKey
+          )
+          await Promise.all(
+            historicalEntries.map(([dateKey, count]) => {
+              const date = new Date(dateKey + 'T00:00:00.000Z')
+              return prisma.dSASnapshot.upsert({
+                where: { userId_date_platform: { userId, date, platform: 'codeforces' } },
+                // Don't overwrite a real snapshot with backfill data
+                update: {},
+                create: {
+                  userId,
+                  date,
+                  platform: 'codeforces',
+                  problemsSolvedToday: count,
+                  problemsSolvedTotal: 0,  // cumulative total not tracked historically
+                },
+              })
+            })
+          )
+
+          // 3. Upsert all submissions into DSASubmission (one row per unique problem)
           await Promise.all(
             data.submissions.map((sub) =>
               prisma.dSASubmission.upsert({
@@ -99,6 +126,7 @@ export async function POST() {
               })
             )
           )
+
           results.push({ platform: 'codeforces', status: 'ok', totalSolved: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.rating })
         })
         .catch((e) => void results.push({ platform: 'codeforces', status: 'error', error: String(e) }))
