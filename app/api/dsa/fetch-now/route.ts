@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { fetchLeetCode } from '@/lib/dsa/leetcode'
 import { fetchCodeforces } from '@/lib/dsa/codeforces'
 import { fetchCodeChef } from '@/lib/dsa/codechef'
-import { fetchCSES } from '@/lib/dsa/cses'
 
 interface PlatformResult {
   platform: string
@@ -152,25 +151,6 @@ export async function POST() {
     )
   } else {
     results.push({ platform: 'codechef', status: 'skipped' })
-  }
-
-  if (profile.csesUsername) {
-    tasks.push(
-      fetchCSES(profile.csesUsername)
-        .then(async (data) => {
-          const prev = prevByPlatform['cses'] ?? data.totalSolved
-          const solvedToday = Math.max(0, data.totalSolved - prev)
-          await prisma.dSASnapshot.upsert({
-            where: { userId_date_platform: { userId, date: today, platform: 'cses' } },
-            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rawData: data as object },
-            create: { userId, date: today, platform: 'cses', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rawData: data as object },
-          })
-          results.push({ platform: 'cses', status: 'ok', totalSolved: data.totalSolved, problemsSolvedToday: solvedToday })
-        })
-        .catch((e) => void results.push({ platform: 'cses', status: 'error', error: String(e) }))
-    )
-  } else {
-    results.push({ platform: 'cses', status: 'skipped' })
   }
 
   await Promise.all(tasks)

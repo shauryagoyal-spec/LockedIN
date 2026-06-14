@@ -22,7 +22,6 @@ export interface DSAProfileData {
   lcUsername: string | null
   cfHandle: string | null
   ccUsername: string | null
-  csesUsername: string | null
   dailyTarget: number
   targetCfRating: number | null
   updatedAt: string

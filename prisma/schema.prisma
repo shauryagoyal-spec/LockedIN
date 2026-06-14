@@ -34,7 +34,6 @@ model DSAProfile {
   lcUsername     String?
   cfHandle       String?
   ccUsername     String?
-  csesUsername   String?
   dailyTarget    Int     @default(5)
   targetCfRating Int?
   updatedAt      DateTime @updatedAt

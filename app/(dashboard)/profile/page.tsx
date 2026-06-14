@@ -8,7 +8,6 @@ interface DSAProfile {
   lcUsername: string
   cfHandle: string
   ccUsername: string
-  csesUsername: string
   dailyTarget: number
   targetCfRating: number | null
 }
@@ -28,7 +27,6 @@ const emptyDSA: DSAProfile = {
   lcUsername: '',
   cfHandle: '',
   ccUsername: '',
-  csesUsername: '',
   dailyTarget: 5,
   targetCfRating: null,
 }
@@ -277,9 +275,6 @@ export default function ProfilePage() {
           <Field label="CodeChef Username" value={dsa.ccUsername} editing={dsaEdit}
             onChange={v => setDsaDraft(p => ({ ...p, ccUsername: v }))}
             draft={dsaDraft.ccUsername} placeholder="e.g. gennady" />
-          <Field label="CSES Username" value={dsa.csesUsername} editing={dsaEdit}
-            onChange={v => setDsaDraft(p => ({ ...p, csesUsername: v }))}
-            draft={dsaDraft.csesUsername} placeholder="e.g. user123" />
           <Field label="Daily Problem Target" value={String(dsa.dailyTarget ?? 5)} editing={dsaEdit}
             onChange={v => setDsaDraft(p => ({ ...p, dailyTarget: parseInt(v) || 5 }))}
             draft={String(dsaDraft.dailyTarget ?? 5)} placeholder="5" type="number" />
