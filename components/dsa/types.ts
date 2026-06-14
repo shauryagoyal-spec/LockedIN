@@ -3,7 +3,6 @@ export interface DSAProfile {
   lcUsername: string | null
   cfHandle: string | null
   ccUsername: string | null
-  csesUsername: string | null
   dailyTarget: number
   targetCfRating: number | null
 }
@@ -55,5 +54,4 @@ export const PLATFORM_META: Record<string, { name: string; short: string; color:
   leetcode:   { name: 'LeetCode',   short: 'LC', color: '#ffa116' },
   codeforces: { name: 'Codeforces', short: 'CF', color: '#3b9eff' },
   codechef:   { name: 'CodeChef',   short: 'CC', color: '#8a6d3b' },
-  cses:       { name: 'CSES',       short: 'CS', color: '#5bd06b' },
 }

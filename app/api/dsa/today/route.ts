@@ -23,7 +23,7 @@ export async function GET() {
   const todayByPlatform = new Map(todaySnapshots.map((s) => [s.platform, s]))
 
   // For any platform that has no snapshot today, get its most recent snapshot
-  const allPlatforms = ['leetcode', 'codeforces', 'codechef', 'cses']
+  const allPlatforms = ['leetcode', 'codeforces', 'codechef']
   const missingPlatforms = allPlatforms.filter((p) => !todayByPlatform.has(p))
 
   const recentSnapshots = missingPlatforms.length > 0

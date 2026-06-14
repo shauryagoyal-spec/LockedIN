@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
   const userId = parseInt(session.user.id)
   const body = await req.json()
 
-  const { lcUsername, cfHandle, ccUsername, csesUsername, dailyTarget, targetCfRating } = body
+  const { lcUsername, cfHandle, ccUsername, dailyTarget, targetCfRating } = body
 
   const profile = await prisma.dSAProfile.upsert({
     where: { userId },
@@ -36,7 +36,6 @@ export async function PUT(req: NextRequest) {
       lcUsername: lcUsername ?? null,
       cfHandle: cfHandle ?? null,
       ccUsername: ccUsername ?? null,
-      csesUsername: csesUsername ?? null,
       dailyTarget: dailyTarget ? parseInt(dailyTarget) : 5,
       targetCfRating: targetCfRating ? parseInt(targetCfRating) : null,
     },
@@ -45,7 +44,6 @@ export async function PUT(req: NextRequest) {
       lcUsername: lcUsername ?? null,
       cfHandle: cfHandle ?? null,
       ccUsername: ccUsername ?? null,
-      csesUsername: csesUsername ?? null,
       dailyTarget: dailyTarget ? parseInt(dailyTarget) : 5,
       targetCfRating: targetCfRating ? parseInt(targetCfRating) : null,
     },

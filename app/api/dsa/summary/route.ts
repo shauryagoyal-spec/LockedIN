@@ -43,9 +43,12 @@ function timeAgo(d: Date): string {
 
 async function getStreak(userId: number): Promise<{ current: number; best: number }> {
   // Pull last 365 days of snapshots.
+  // Use UTC consistently: snapshot dates are stored at UTC midnight (@db.Date)
+  // and bucket keys are derived via toISOString() (UTC). Walking the calendar in
+  // local time would offset the date keys by a day for non-UTC users.
   const since = new Date()
-  since.setDate(since.getDate() - 365)
-  since.setHours(0, 0, 0, 0)
+  since.setUTCDate(since.getUTCDate() - 365)
+  since.setUTCHours(0, 0, 0, 0)
 
   const rows = await prisma.dSASnapshot.findMany({
     where: { userId, date: { gte: since } },
@@ -61,11 +64,11 @@ async function getStreak(userId: number): Promise<{ current: number; best: numbe
 
   // Walk backwards from today for current streak.
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
   let current = 0
   for (let i = 0; i < 365; i++) {
     const d = new Date(today)
-    d.setDate(today.getDate() - i)
+    d.setUTCDate(today.getUTCDate() - i)
     const v = byDate.get(d.toISOString().slice(0, 10)) ?? 0
     if (v > 0) current++
     else if (i === 0) continue // ignore today if not logged yet
@@ -77,7 +80,7 @@ async function getStreak(userId: number): Promise<{ current: number; best: numbe
   let run = 0
   for (let i = 0; i < 365; i++) {
     const d = new Date(since)
-    d.setDate(since.getDate() + i)
+    d.setUTCDate(since.getUTCDate() + i)
     const v = byDate.get(d.toISOString().slice(0, 10)) ?? 0
     if (v > 0) {
       run++
