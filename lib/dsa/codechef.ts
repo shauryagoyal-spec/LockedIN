@@ -5,6 +5,21 @@ export interface CodeChefResult {
   globalRank: number | null
 }
 
+// CodeChef stars are derived deterministically from the rating band.
+// Thresholds per https://www.codechef.com/ratings
+function starsForRating(rating: number | null): string | null {
+  if (rating == null) return null
+  let n: number
+  if (rating < 1400) n = 1
+  else if (rating < 1600) n = 2
+  else if (rating < 1800) n = 3
+  else if (rating < 2000) n = 4
+  else if (rating < 2200) n = 5
+  else if (rating < 2500) n = 6
+  else n = 7
+  return `${n}★`
+}
+
 export async function fetchCodeChef(username: string): Promise<CodeChefResult> {
   // CodeChef public API (unofficial but stable)
   const res = await fetch(`https://www.codechef.com/users/${username}`, {
@@ -20,25 +35,26 @@ export async function fetchCodeChef(username: string): Promise<CodeChefResult> {
 
   const html = await res.text()
 
-  // Rating — multiple possible JSON shapes in the page
-  const ratingMatch = html.match(/"currentRating"\s*:\s*(\d+)/) ?? html.match(/rating['":\s]+(\d{3,4})/)
+  // Current rating — lives in the `rating-number` element, e.g.
+  // <div class="rating-number">3355</div>. This is the current rating, not the highest.
+  const ratingMatch = html.match(/class="rating-number"[^>]*>\s*(\d{3,4})/)
   const rating = ratingMatch ? parseInt(ratingMatch[1]) : null
 
-  // Stars
-  const starsMatch = html.match(/(\d)\s*[★*]/)
-  const stars = starsMatch ? `${starsMatch[1]}★` : null
+  // Stars — derived from the rating band rather than scraping ★ glyphs.
+  const stars = starsForRating(rating)
 
-  // Total problems solved — try multiple patterns
+  // Total problems solved — page shows the plain label "Total Problems Solved: NNN",
+  // sometimes with a wrapping tag around the number.
   const solvedMatch =
-    html.match(/(\d+)\s*<\/span>\s*<span[^>]*>Problems Solved/) ??
-    html.match(/Problems Solved[^<]*<[^>]*>\s*(\d+)/) ??
-    html.match(/"totalSolved"\s*:\s*(\d+)/) ??
-    html.match(/(\d+)\s*problems?\s*solved/i)
+    html.match(/Total Problems Solved:\s*<\/?[^>]*>?\s*(\d+)/i) ??
+    html.match(/Total Problems Solved:\s*(\d+)/i)
   const totalSolved = solvedMatch ? parseInt(solvedMatch[1]) : 0
 
-  // Global rank
-  const rankMatch = html.match(/"globalRank"\s*:\s*(\d+)/)
-  const globalRank = rankMatch ? parseInt(rankMatch[1]) : null
+  // Global rank — the user's overall rank in the `rating-ranks` block, linked to
+  // /ratings/all. Active users render `<strong> 1234 </strong>`; inactive users show
+  // `<strong> Inactive </strong>` (no digits) → null.
+  const rankMatch = html.match(/<a[^>]*ratings\/all[^>]*>\s*<strong>\s*([\d,]+)\s*<\/strong>/)
+  const globalRank = rankMatch ? parseInt(rankMatch[1].replace(/,/g, '')) : null
 
   return { rating, stars, totalSolved, globalRank }
 }
