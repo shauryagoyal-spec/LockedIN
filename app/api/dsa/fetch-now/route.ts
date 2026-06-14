@@ -53,10 +53,10 @@ export async function POST() {
           const solvedToday = Math.max(0, data.totalSolved - prev)
           await prisma.dSASnapshot.upsert({
             where: { userId_date_platform: { userId, date: today, platform: 'leetcode' } },
-            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rawData: data as object },
-            create: { userId, date: today, platform: 'leetcode', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rawData: data as object },
+            update: { problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.contestRating, rawData: data as object },
+            create: { userId, date: today, platform: 'leetcode', problemsSolvedTotal: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.contestRating, rawData: data as object },
           })
-          results.push({ platform: 'leetcode', status: 'ok', totalSolved: data.totalSolved, problemsSolvedToday: solvedToday })
+          results.push({ platform: 'leetcode', status: 'ok', totalSolved: data.totalSolved, problemsSolvedToday: solvedToday, rating: data.contestRating })
         })
         .catch((e) => void results.push({ platform: 'leetcode', status: 'error', error: String(e) }))
     )

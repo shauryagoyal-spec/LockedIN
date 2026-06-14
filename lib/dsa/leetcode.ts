@@ -4,12 +4,16 @@ export interface LeetCodeResult {
   mediumSolved: number
   hardSolved: number
   ranking: number | null
+  contestRating: number | null
+  globalRanking: number | null
+  attendedContests: number
+  topPercentage: number | null
 }
 
 const GRAPHQL_URL = 'https://leetcode.com/graphql'
 
 const QUERY = `
-  query userProfile($username: String!) {
+  query userData($username: String!) {
     matchedUser(username: $username) {
       profile { ranking }
       submitStatsGlobal {
@@ -18,6 +22,12 @@ const QUERY = `
           count
         }
       }
+    }
+    userContestRanking(username: $username) {
+      rating
+      globalRanking
+      attendedContestsCount
+      topPercentage
     }
   }
 `
@@ -46,11 +56,18 @@ export async function fetchLeetCode(username: string): Promise<LeetCodeResult> {
 
   const get = (d: string) => stats.find((s) => s.difficulty === d)?.count ?? 0
 
+  // userContestRanking is null for users who have never attended a contest.
+  const contest = json?.data?.userContestRanking
+
   return {
     totalSolved: get('All'),
     easySolved: get('Easy'),
     mediumSolved: get('Medium'),
     hardSolved: get('Hard'),
     ranking: user.profile?.ranking ?? null,
+    contestRating: contest?.rating != null ? Math.round(contest.rating) : null,
+    globalRanking: contest?.globalRanking ?? null,
+    attendedContests: contest?.attendedContestsCount ?? 0,
+    topPercentage: contest?.topPercentage ?? null,
   }
 }

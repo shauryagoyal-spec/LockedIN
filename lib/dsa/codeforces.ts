@@ -73,8 +73,12 @@ export async function fetchCodeforces(handle: string): Promise<CodeforcesResult>
   for (const s of rawSubs) {
     const key = problemKey(s)
     if (seenProblems.has(key)) continue  // already captured the latest
-    const isAC = s.verdict === 'OK'
+    // A problem counts as solved ('AC') if it was EVER accepted — not just if the
+    // most recent submission happened to pass. Otherwise re-attempting a solved
+    // problem with a failing verdict would wrongly mark it unsolved and drop it
+    // from topic tallies.
     const firstAcSec_ = firstAcSec.get(key) ?? null
+    const isAC = firstAcSec_ != null
     seenProblems.set(key, {
       problemId: key,
       problemTitle: s.problem.name,
@@ -89,12 +93,13 @@ export async function fetchCodeforces(handle: string): Promise<CodeforcesResult>
   // Unique AC problems (total count)
   const acProblems = new Set(firstAcSec.keys())
 
-  // Today's unique AC problems
-  const todayAcProblems = new Set(
-    rawSubs
-      .filter((s) => s.verdict === 'OK' && s.creationTimeSeconds >= todayStartSec)
-      .map(problemKey)
-  )
+  // Today's newly-solved problems = problems whose FIRST AC happened today.
+  // (Counting any AC today would also include re-solves of old problems, which
+  //  would be inconsistent with the heatmap's dailyFirstAC counts below.)
+  let todayFirstAC = 0
+  firstAcSec.forEach((sec) => {
+    if (sec >= todayStartSec) todayFirstAC++
+  })
 
   // dailyFirstAC: for each UTC date, how many problems were first AC'd that day
   const dailyFirstAC: Record<string, number> = {}
@@ -109,7 +114,7 @@ export async function fetchCodeforces(handle: string): Promise<CodeforcesResult>
     maxRating: user.maxRating ?? null,
     rank: user.rank ?? null,
     totalSolved: acProblems.size,
-    todayAC: todayAcProblems.size,
+    todayAC: todayFirstAC,
     submissions: Array.from(seenProblems.values()),
     dailyFirstAC,
   }
