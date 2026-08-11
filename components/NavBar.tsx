@@ -9,7 +9,6 @@ const links = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dsa', label: 'DSA', icon: Code2 },
   { href: '/gym', label: 'Gym', icon: Dumbbell },
-  { href: '/skills', label: 'Skills', icon: BookOpen },
   { href: '/profile', label: 'Profile', icon: UserCircle },
 ]
 
